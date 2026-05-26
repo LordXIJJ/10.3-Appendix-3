@@ -1,0 +1,311 @@
+function demo_project_template()
+    % Demo script for RealSense Project Template
+    % This demonstrates all the features of the template
+    
+    fprintf('=== RealSense Project Template Demo ===\n\n');
+    
+    try
+        % Create template instance
+        rs = realsense_project_template();
+        
+        % Start streaming
+        rs.start_streaming();
+        
+        % Demo 1: Basic frame capture with distance measurements
+        fprintf('Demo 1: Basic frame capture with distance measurements\n');
+        [depth_img, color_img, depth_matrix] = rs.get_frames();
+        
+        figure('Name', 'Demo 1: Basic Frames with Distance Measurements', 'NumberTitle', 'off', ...
+               'Position', [100, 100, 1200, 700]);
+        
+        % Calculate center point distance
+        center_x = size(depth_matrix, 2) / 2;
+        center_y = size(depth_matrix, 1) / 2;
+        center_distance = rs.measure_distance(center_x, center_y);
+        
+        subplot(2, 2, 1);
+        imshow(color_img);
+        title('Color Frame');
+        hold on;
+        plot(center_x, center_y, 'r+', 'MarkerSize', 15, 'LineWidth', 3);
+        hold off;
+        
+        subplot(2, 2, 2);
+        imshow(depth_img);
+        title('Depth Frame');
+        hold on;
+        plot(center_x, center_y, 'r+', 'MarkerSize', 15, 'LineWidth', 3);
+        hold off;
+        
+        % Display measurements below images
+        subplot(2, 2, 3);
+        axis off;
+        text(0.05, 0.9, sprintf('Center Point Distance: %.1f cm', center_distance*100), ...
+             'FontSize', 16, 'FontWeight', 'bold');
+        text(0.05, 0.75, sprintf('Center Coordinates: (%d, %d)', center_x, center_y), ...
+             'FontSize', 14);
+        text(0.05, 0.6, sprintf('Image Size: %dx%d', size(depth_matrix, 2), size(depth_matrix, 1)), ...
+             'FontSize', 14);
+        title('Distance Measurements', 'FontSize', 16, 'FontWeight', 'bold');
+        
+        subplot(2, 2, 4);
+        axis off;
+        text(0.05, 0.9, 'Measurement Info:', 'FontSize', 16, 'FontWeight', 'bold');
+        text(0.05, 0.75, '• Red cross marks center point', 'FontSize', 12);
+        text(0.05, 0.6, '• Distance measured in centimeters', 'FontSize', 12);
+        text(0.05, 0.45, '• Coordinates in pixel space', 'FontSize', 12);
+        text(0.05, 0.3, '• RealSense D435 depth camera', 'FontSize', 12);
+        title('Information', 'FontSize', 16, 'FontWeight', 'bold');
+        
+        % Demo 2: Distance measurement
+        fprintf('\nDemo 2: Distance measurement\n');
+        fprintf('Measuring distance at center of image...\n');
+        
+        center_x = size(depth_matrix, 2) / 2;
+        center_y = size(depth_matrix, 1) / 2;
+        
+        distance = rs.measure_distance(center_x, center_y);
+        fprintf('Distance at center: %.3f meters (%.1f cm)\n', distance, distance * 100);
+        
+        % Demo 3: Save frames
+        fprintf('\nDemo 3: Save frames\n');
+        rs.save_frames('demo_capture');
+        
+        % Demo 4: Live stream with distance measurements (5 seconds)
+        fprintf('\nDemo 4: Live stream with distance measurements (5 seconds)\n');
+        fprintf('Live streaming with center point distance measurement...\n');
+        
+        % Create figure for live stream
+        figure('Name', 'Demo 4: Live Stream with Distance Measurements', 'NumberTitle', 'off', ...
+               'Position', [100, 100, 1200, 700]);
+        
+        % Initialize text handles for updating
+        subplot(2, 2, 3);
+        axis off;
+        title('Live Measurements', 'FontSize', 16, 'FontWeight', 'bold');
+        
+        % Create initial text objects that will be updated
+        h_distance = text(0.05, 0.9, '', 'FontSize', 16, 'FontWeight', 'bold', 'Color', 'red');
+        h_center = text(0.05, 0.75, '', 'FontSize', 14);
+        h_frame = text(0.05, 0.6, '', 'FontSize', 14);
+        h_time = text(0.05, 0.45, '', 'FontSize', 14);
+        
+        start_time = tic;
+        while toc(start_time) < 5
+            [depth_img, color_img, depth_matrix] = rs.get_frames();
+            
+            % Calculate center point distance
+            center_x = size(depth_matrix, 2) / 2;
+            center_y = size(depth_matrix, 1) / 2;
+            center_distance = rs.measure_distance(center_x, center_y);
+            
+            % Display color image
+            subplot(2, 2, 1);
+            imshow(color_img);
+            title(sprintf('Color Stream (Frame: %d)', rs.frame_count));
+            hold on;
+            plot(center_x, center_y, 'r+', 'MarkerSize', 15, 'LineWidth', 3);
+            hold off;
+            
+            % Display depth image
+            subplot(2, 2, 2);
+            imshow(depth_img);
+            title(sprintf('Depth Stream (Frame: %d)', rs.frame_count));
+            hold on;
+            plot(center_x, center_y, 'r+', 'MarkerSize', 15, 'LineWidth', 3);
+            hold off;
+            
+            % Update real-time measurements (reuse existing text objects)
+            subplot(2, 2, 3);
+            set(h_distance, 'String', sprintf('Real-time Distance: %.1f cm', center_distance*100));
+            set(h_center, 'String', sprintf('Center Point: (%d, %d)', center_x, center_y));
+            set(h_frame, 'String', sprintf('Frame Count: %d', rs.frame_count));
+            set(h_time, 'String', sprintf('Elapsed Time: %.1f s', toc(start_time)));
+            
+            % Display status information
+            subplot(2, 2, 4);
+            axis off;
+            text(0.05, 0.9, 'Live Stream Status:', 'FontSize', 16, 'FontWeight', 'bold');
+            text(0.05, 0.75, '• Red cross shows center point', 'FontSize', 12);
+            text(0.05, 0.6, '• Distance updates in real-time', 'FontSize', 12);
+            text(0.05, 0.45, '• Frame count increases', 'FontSize', 12);
+            text(0.05, 0.3, '• Timer shows elapsed time', 'FontSize', 12);
+            title('Status Info', 'FontSize', 16, 'FontWeight', 'bold');
+            
+            drawnow;
+        end
+        
+        fprintf('Live stream completed.\n');
+        
+        % Demo 5: 3D point cloud
+        fprintf('\nDemo 5: 3D point cloud\n');
+        [vertices, colors] = rs.get_pointcloud();
+        
+        figure('Name', 'Demo 5: 3D Point Cloud', 'NumberTitle', 'off', ...
+               'Position', [100, 100, 1000, 800]);
+        
+        scatter3(vertices(:, 1), vertices(:, 2), vertices(:, 3), ...
+                1, colors, 'filled');
+        
+        axis equal;
+        grid on;
+        xlabel('X (meters)');
+        ylabel('Y (meters)');
+        zlabel('Z (meters)');
+        title('3D Point Cloud Demo');
+        view(45, 30);
+        
+        fprintf('Point cloud generated with %d points\n', size(vertices, 1));
+        
+        % Demo 6: Interactive distance measurement with multiple points
+        fprintf('\nDemo 6: Interactive distance measurement with multiple points\n');
+        fprintf('Click on the image to measure distance (ESC to exit)\n');
+        fprintf('Multiple measurements will be displayed simultaneously\n');
+        
+        figure('Name', 'Demo 6: Interactive Measurement with Multiple Points', 'NumberTitle', 'off', ...
+               'Position', [100, 100, 1200, 700]);
+        
+        % Store multiple measurement points
+        measurement_points = [];
+        measurement_distances = [];
+        
+        % Initialize text handles for updating
+        subplot(2, 2, 3);
+        axis off;
+        title('Current Measurements', 'FontSize', 16, 'FontWeight', 'bold');
+        
+        subplot(2, 2, 4);
+        axis off;
+        title('Instructions', 'FontSize', 16, 'FontWeight', 'bold');
+        
+        % Create initial text objects that will be updated
+        h_measurement_header = text(0.05, 0.95, '', 'FontSize', 16, 'FontWeight', 'bold');
+        h_measurement_points = cell(8, 1);  % Store handles for up to 8 measurement points
+        for i = 1:8
+            y_pos = 0.85 - (i-1) * 0.09;
+            h_measurement_points{i} = text(0.05, y_pos, '', 'FontSize', 12);
+        end
+        h_measurement_extra = text(0.05, 0.15, '', 'FontSize', 12, 'FontStyle', 'italic');
+        
+        h_instruction_header = text(0.05, 0.95, 'Instructions:', 'FontSize', 16, 'FontWeight', 'bold');
+        h_instruction1 = text(0.05, 0.8, '• Click anywhere on images', 'FontSize', 12);
+        h_instruction2 = text(0.05, 0.65, '• Red circles mark points', 'FontSize', 12);
+        h_instruction3 = text(0.05, 0.5, '• Measurements shown below', 'FontSize', 12);
+        h_instruction4 = text(0.05, 0.35, '• Press ESC to exit', 'FontSize', 12);
+        h_instruction5 = text(0.05, 0.2, '• Total points measured:', 'FontSize', 12);
+        h_instruction6 = text(0.05, 0.1, '', 'FontSize', 12, 'FontWeight', 'bold');
+        
+        while true
+            [depth_img, color_img, depth_matrix] = rs.get_frames();
+            
+            subplot(2, 2, 1);
+            imshow(color_img);
+            title('Click to measure distance (ESC to exit)');
+            
+            subplot(2, 2, 2);
+            imshow(depth_img);
+            title('Depth view');
+            
+            % Display all previous measurements on images (just markers, no text)
+            for i = 1:length(measurement_points)
+                x = measurement_points(i, 1);
+                y = measurement_points(i, 2);
+                
+                subplot(2, 2, 1);
+                hold on;
+                plot(x, y, 'ro', 'MarkerSize', 8, 'LineWidth', 2);
+                hold off;
+                
+                subplot(2, 2, 2);
+                hold on;
+                plot(x, y, 'ro', 'MarkerSize', 8, 'LineWidth', 2);
+                hold off;
+            end
+            
+            % Update measurements display (reuse existing text objects)
+            subplot(2, 2, 3);
+            if length(measurement_points) > 0
+                set(h_measurement_header, 'String', 'Measurement Points:');
+                for i = 1:min(length(measurement_points), 8)
+                    set(h_measurement_points{i}, 'String', sprintf('P%d: (%.0f, %.0f) = %.1f cm', ...
+                         i, measurement_points(i, 1), measurement_points(i, 2), ...
+                         measurement_distances(i) * 100));
+                end
+                % Clear unused measurement point displays
+                for i = min(length(measurement_points), 8) + 1:8
+                    set(h_measurement_points{i}, 'String', '');
+                end
+                if length(measurement_points) > 8
+                    set(h_measurement_extra, 'String', sprintf('... and %d more points', length(measurement_points) - 8));
+                else
+                    set(h_measurement_extra, 'String', '');
+                end
+            else
+                set(h_measurement_header, 'String', 'No measurements yet');
+                for i = 1:8
+                    set(h_measurement_points{i}, 'String', '');
+                end
+                set(h_measurement_extra, 'String', 'Click on the images above to add measurement points');
+            end
+            
+            % Update instructions
+            subplot(2, 2, 4);
+            set(h_instruction6, 'String', sprintf('  %d points', length(measurement_points)));
+            
+            [x, y, button] = ginput(1);
+            
+            if isempty(x) || button == 27  % ESC key
+                break;
+            end
+            
+            x = round(x);
+            y = round(y);
+            
+            if x >= 1 && x <= size(depth_matrix, 2) && y >= 1 && y <= size(depth_matrix, 1)
+                distance = rs.measure_distance(x, y);
+                fprintf('Point %d at (%d, %d): %.3f meters (%.1f cm)\n', ...
+                        length(measurement_points) + 1, x, y, distance, distance * 100);
+                
+                % Store the measurement
+                measurement_points = [measurement_points; x, y];
+                measurement_distances = [measurement_distances; distance];
+            end
+            
+            drawnow;
+        end
+        
+        fprintf('Interactive measurement completed. %d points measured.\n', length(measurement_points));
+        
+        % Display measurement summary
+        if length(measurement_points) > 0
+            fprintf('\n=== Measurement Summary ===\n');
+            for i = 1:length(measurement_points)
+                fprintf('Point %d: (%.0f, %.0f) = %.1f cm\n', ...
+                        i, measurement_points(i, 1), measurement_points(i, 2), ...
+                        measurement_distances(i) * 100);
+            end
+            
+            % Calculate statistics
+            avg_distance = mean(measurement_distances) * 100;
+            min_distance = min(measurement_distances) * 100;
+            max_distance = max(measurement_distances) * 100;
+            
+            fprintf('\nStatistics:\n');
+            fprintf('  Average distance: %.1f cm\n', avg_distance);
+            fprintf('  Minimum distance: %.1f cm\n', min_distance);
+            fprintf('  Maximum distance: %.1f cm\n', max_distance);
+        end
+        
+        % Stop streaming
+        rs.stop_streaming();
+        
+        fprintf('\n=== Demo completed successfully! ===\n');
+        fprintf('All features of the RealSense Project Template have been demonstrated.\n');
+        
+    catch ME
+        fprintf('Error in demo: %s\n', ME.message);
+        if exist('rs', 'var')
+            rs.stop_streaming();
+        end
+    end
+end
